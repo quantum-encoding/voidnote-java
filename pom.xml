@@ -5,19 +5,37 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>net.voidnote</groupId>
-  <artifactId>voidnote</artifactId>
+  <artifactId>voidnote-java</artifactId>
   <version>0.1.0</version>
   <packaging>jar</packaging>
 
-  <name>voidnote</name>
-  <description>Official Java SDK for VoidNote — zero-knowledge self-destructing notes</description>
+  <name>voidnote-java</name>
+  <description>Official Java SDK for VoidNote — zero-knowledge self-destructing notes and live encrypted streams</description>
   <url>https://voidnote.net</url>
 
   <licenses>
     <license>
-      <name>MIT</name>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <id>quantum-encoding</id>
+      <name>quantum-encoding</name>
+      <email>info@quantumencoding.io</email>
+      <url>https://github.com/quantum-encoding</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/quantum-encoding/voidnote-java.git</connection>
+    <developerConnection>scm:git:ssh://github.com/quantum-encoding/voidnote-java.git</developerConnection>
+    <url>https://github.com/quantum-encoding/voidnote-java</url>
+    <tag>v0.1.0</tag>
+  </scm>
 
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
@@ -47,6 +65,68 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
+      </plugin>
+
+      <!-- Sources jar — required by Maven Central -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals><goal>jar-no-fork</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Javadoc jar — required by Maven Central -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.6.3</version>
+        <configuration>
+          <doclint>none</doclint>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals><goal>jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- GPG signing — required by Maven Central -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals><goal>sign</goal></goals>
+            <configuration>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven Central Portal publisher -->
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.7.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>central</publishingServerId>
+          <autoPublish>true</autoPublish>
+          <waitUntil>published</waitUntil>
+        </configuration>
       </plugin>
     </plugins>
   </build>
