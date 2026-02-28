@@ -107,9 +107,10 @@ public final class VoidNote {
         req.addProperty("tokenId", tokenId);
         req.addProperty("encryptedContent", enc.ciphertext());
         req.addProperty("iv", enc.iv());
-        if (opts.maxViews   != null) req.addProperty("maxViews",    opts.maxViews);
-        if (opts.ttlMinutes != null) req.addProperty("ttlMinutes",  opts.ttlMinutes);
-        if (opts.title      != null) req.addProperty("title",       opts.title);
+        if (opts.maxViews  != null) req.addProperty("maxViews",  opts.maxViews);
+        if (opts.expiresIn != null) req.addProperty("expiresIn", opts.expiresIn);
+        if (opts.noteType  != null) req.addProperty("noteType",  opts.noteType);
+        if (opts.title     != null) req.addProperty("title",     opts.title);
 
         String resp = httpPost(DEFAULT_BASE + "/api/notes", GSON.toJson(req), opts.apiKey);
         CreatePayload p = GSON.fromJson(resp, CreatePayload.class);
@@ -396,5 +397,83 @@ public final class VoidNote {
     private static class StreamPayload {
         String siteUrl;
         String expiresAt;
+    }
+
+    private static class CryptoOrderPayload {
+        String orderId;
+        String toAddress;
+        String chain;
+        String token;
+        double amountUsd;
+        String amount;
+        int credits;
+        String expiresAt;
+    }
+
+    private static class SubmitPaymentPayload {
+        boolean ok;
+        int credits;
+        int creditsAdded;
+    }
+
+    // -------------------------------------------------------------------------
+    // Credits / buy API
+    // -------------------------------------------------------------------------
+
+    /**
+     * Creates a crypto payment order. Returns addressing details for the on-chain transfer.
+     *
+     * <p>Supported bundles: {@code "test"} ($1/20 notes), {@code "starter"} ($5/100),
+     * {@code "standard"} ($20/500), {@code "pro"} ($35/1000).
+     *
+     * <p>Supported chains: {@code "polygon"}, {@code "base"}, {@code "arbitrum"},
+     * {@code "ethereum"}, {@code "bitcoin"}, {@code "tron"}.
+     *
+     * <p>Supported tokens depend on chain — stablecoins ({@code "USDT"}, {@code "USDC"}),
+     * native ({@code "ETH"}, {@code "BTC"}, {@code "TRX"}).
+     *
+     * @param apiKey   Your API key ({@code vn_...}).
+     * @param bundleId One of: {@code "test"}, {@code "starter"}, {@code "standard"}, {@code "pro"}.
+     * @param chain    Target chain.
+     * @param token    Token to pay with.
+     * @return A {@link CryptoOrder} containing the recipient address and exact amount.
+     */
+    public static CryptoOrder createCryptoOrder(
+            String apiKey, String bundleId, String chain, String token)
+            throws VoidNoteException {
+        requireApiKey(apiKey);
+        JsonObject req = new JsonObject();
+        req.addProperty("bundleId", bundleId);
+        req.addProperty("chain", chain);
+        req.addProperty("token", token);
+
+        String resp = httpPost(DEFAULT_BASE + "/api/buy/crypto/create-order",
+                GSON.toJson(req), apiKey);
+        CryptoOrderPayload p = GSON.fromJson(resp, CryptoOrderPayload.class);
+        return new CryptoOrder(p.orderId, p.toAddress, p.chain, p.token,
+                p.amountUsd, p.amount, p.credits, p.expiresAt);
+    }
+
+    /**
+     * Submits a completed on-chain transaction for verification.
+     * If valid, credits are added to your account immediately.
+     *
+     * @param apiKey  Your API key ({@code vn_...}).
+     * @param orderId The order ID returned by {@link #createCryptoOrder}.
+     * @param txHash  The on-chain transaction hash / txid.
+     * @return A {@link SubmitPaymentResult} with the updated credit balance.
+     */
+    public static SubmitPaymentResult submitCryptoPayment(
+            String apiKey, String orderId, String txHash)
+            throws VoidNoteException {
+        requireApiKey(apiKey);
+        JsonObject req = new JsonObject();
+        req.addProperty("orderId", orderId);
+        req.addProperty("txHash", txHash);
+
+        String resp = httpPost(DEFAULT_BASE + "/api/buy/crypto/submit-tx",
+                GSON.toJson(req), apiKey);
+        SubmitPaymentPayload p = GSON.fromJson(resp, SubmitPaymentPayload.class);
+        return new SubmitPaymentResult(p.credits, p.creditsAdded);
     }
 }
